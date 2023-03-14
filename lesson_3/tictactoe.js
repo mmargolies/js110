@@ -3,13 +3,19 @@ const rlSync = require('readline-sync');
 const EMPTY_MARKER = ' ';
 const USER_MARKER = 'X';
 const COMPUTER_MARKER = 'O';
+const GAMES_TO_WIN = 3;
 
 function prompt(message) {
-  console.log(`=> ${message}`);
+  console.log(`>> ${message}`);
 }
 
 function clearConsole() {
   console.clear();
+}
+
+function greetUser() {
+  prompt('Welcome to Tic-Tac-Toe!');
+  prompt('First one to three games is the winner!\n');
 }
 
 function displayBoard(boardObj) {
@@ -42,6 +48,13 @@ function generateBoard() {
   return board;
 }
 
+function generateScorecard() {
+  return {
+    userWins: 0,
+    computerWins: 0
+  };
+}
+
 function openSquares(boardObj) {
   return Object.keys(boardObj).filter(square => {
     return boardObj[square] === EMPTY_MARKER;
@@ -51,13 +64,22 @@ function openSquares(boardObj) {
 function joinOr(arr, delim = ', ', word = 'or') {
   if (arr.length < 2) return arr.join('');
 
-  return `${arr.slice(0, (arr.length - 1)).join(delim)} ${word} ` +
-         `${arr[arr.length - 1]}`;
+  return arr.slice(0, (arr.length - 1)).join(delim) +
+         `${delim}${word} ${arr[arr.length - 1]}`;
+
+}
+
+function displayMatchScore(scoreObj) {
+  prompt(
+    `The score is: (You) ${scoreObj.userWins} -- ` +
+    `${scoreObj.computerWins} (Computer)\n`
+  );
 }
 
 function getUserChoice(boardObj) {
   let validSquares = openSquares(boardObj);
   prompt(`Choose a square (${joinOr(validSquares)}):`);
+
   return rlSync.question().trim();
 }
 
@@ -65,7 +87,9 @@ function validateUserChoice(boardObj, choice) {
   let validSquares = openSquares(boardObj);
 
   while (!validSquares.includes(choice)) {
-    prompt(`Please enter a valid square (${validSquares.join(', ')}): `);
+    displayBoard(boardObj);
+
+    prompt(`Please enter a valid square (${joinOr(validSquares)}): `);
     choice = rlSync.question().trim();
   }
 
@@ -79,6 +103,18 @@ function computerChoice(boardObj) {
   boardObj[validSquares[choiceIdx]] = COMPUTER_MARKER;
 }
 
+function chooseSquare(boardObj, player) {
+  if (player === 'user') {
+    validateUserChoice(boardObj, getUserChoice(boardObj));
+  } else if (player === 'cpu') {
+    computerChoice(boardObj);
+  }
+}
+
+function alternatePlayer(player) {
+  return player === 'user' ? 'cpu' : 'user';
+}
+
 function boardIsFull(boardObj) {
   return openSquares(boardObj).length === 0;
 }
@@ -89,7 +125,7 @@ function isWinningCombo(array, obj, marker) {
   }));
 }
 
-function detectWinner(boardObj) {
+function detectRoundWinner(boardObj) {
   let winCombos = [
     [1, 2, 3], [4, 5, 6], [7, 8, 9], // rows
     [1, 4, 7], [2, 5, 8], [3, 6, 9], // columns
@@ -106,37 +142,57 @@ function detectWinner(boardObj) {
 }
 
 function someoneWon(boardObj) {
-  return !!detectWinner(boardObj);
+  return !!detectRoundWinner(boardObj);
 }
 
-function playRound(boardObj) {
-  displayBoard(boardObj);
+function playRound(boardObj, scoreObj) {
+  let currentPlayer = 'user';
 
   while (true) {
-    validateUserChoice(boardObj, getUserChoice(boardObj));
     displayBoard(boardObj);
-    if (boardIsFull(boardObj) || someoneWon(boardObj)) break;
+    displayMatchScore(scoreObj);
 
-    computerChoice(boardObj);
-    displayBoard(boardObj);
-
+    chooseSquare(boardObj, currentPlayer);
+    currentPlayer = alternatePlayer(currentPlayer);
     if (boardIsFull(boardObj) || someoneWon(boardObj)) break;
   }
+
+  displayBoard(boardObj);
 }
 
 function waitForAcknowledgement() {
   rlSync.question(
-    '(Press Enter to begin...)\n', {hideEchoBack: true, mask: ''}
+    '(Press Enter to continue...)\n', {hideEchoBack: true, mask: ''}
   );
 }
 
-// eslint-disable-next-line consistent-return
-function displayWinner(winner) {
-  switch (winner) {
-    case 'player':   return "You've won!! Congrats :)";
-    case 'computer': return "The computer won, oh well.";
-    case null:       return "It's a tie!";
+function incrementScore(result, scoreObj) {
+  switch (result) {
+    case 'player':   scoreObj.userWins += 1;
+      break;
+    case 'computer': scoreObj.computerWins += 1;
+      break;
   }
+}
+
+// eslint-disable-next-line consistent-return
+function displayRoundWinner(result) {
+  switch (result) {
+    case 'player':   return "You've won!! Congrats :)\n";
+    case 'computer': return "The computer won, oh well.\n";
+    case null:       return "It's a tie!\n";
+  }
+}
+
+function matchIsOver(scoreObj) {
+  return scoreObj.userWins === GAMES_TO_WIN ||
+         scoreObj.computerWins === GAMES_TO_WIN;
+}
+
+function displayGrandWinner(scoreObj) {
+  if (scoreObj.userWins === 3) prompt('You won the match!!\n');
+
+  if (scoreObj.computerWins === 3) prompt('The computer won :/\n');
 }
 
 function getChoiceToPlayAgain() {
@@ -144,35 +200,69 @@ function getChoiceToPlayAgain() {
   return rlSync.question().toLowerCase().trim();
 }
 
-function validateChoiceToPlayAgain(choice) {
-  while (!['y', 'yes', 'n', 'no'].includes(choice)) {
+function validateChoiceToPlayAgain(userChoice) {
+  while (!['y', 'yes', 'n', 'no'].includes(userChoice)) {
     prompt('please enter "y" or "n"');
-    choice = rlSync.question().toLowerCase().trim();
+    userChoice = rlSync.question().toLowerCase().trim();
   }
 
-  return choice;
+  return userChoice;
 }
 
 function continuePlaying() {
-  let choice = validateChoiceToPlayAgain(getChoiceToPlayAgain());
+  let userChoice = validateChoiceToPlayAgain(getChoiceToPlayAgain());
 
-  if (choice === 'y' && 'yes') return true;
+  return userChoice === 'y' || userChoice === 'yes';
+}
 
-  return false;
+function playMatch() {
+  const scorecard = generateScorecard();
+
+  do {
+    const board = generateBoard();
+
+    playRound(board, scorecard);
+    let winner = detectRoundWinner(board);
+    incrementScore(winner, scorecard);
+
+    prompt(displayRoundWinner(winner));
+    waitForAcknowledgement();
+  } while (!matchIsOver(scorecard));
+
+  clearConsole();
+  displayGrandWinner(scorecard);
 }
 
 function runApp() {
+  clearConsole();
+  greetUser();
+  waitForAcknowledgement();
+
+  do {
+    playMatch();
+  } while (continuePlaying());
+
+  clearConsole();
+  prompt('Until next time!');
+}
+
+runApp();
+
+// TODO:
+// - multiplayer? if so, add a menu
+
+/* function runApp() {
   prompt('Welcome to Tic-Tac-Toe!');
   waitForAcknowledgement();
 
   do {
     const board = generateBoard();
     playRound(board);
-    prompt(displayWinner(detectWinner(board)));
+    prompt(displayRoundWinner(detectRoundWinner(board)));
   } while (continuePlaying());
 
   clearConsole();
   prompt("Until next time!");
 }
 
-runApp();
+runApp(); */
