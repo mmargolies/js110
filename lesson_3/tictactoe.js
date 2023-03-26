@@ -18,7 +18,6 @@ function prompt(message) {
   console.log(`>> ${message}`);
 }
 function clearConsole() {
-
   console.clear();
 }
 
