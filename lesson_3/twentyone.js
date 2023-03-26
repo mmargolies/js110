@@ -63,11 +63,12 @@ function sayGoodbye() {
 }
 
 function displayRules() {
-  prompt('Try to get as close to 21 as you can!');
-  prompt('If your hand total is greater than 21, you lose the round!');
+  prompt('Each round is won by the player whose hand is closest to 21!');
+  prompt('If your hand totals to more than 21 you "bust" and lose the round.');
   prompt('Face cards have a value of 10, and aces are 1 or 11.');
   prompt('The optimal ace value will be determined for you.\n');
-  prompt("You'll be playing a best-of-five match agains the computer!\n");
+  prompt("You'll be playing a best-of-five match agains the computer.");
+  prompt("First to three rounds wins the match. Good luck!\n");
 }
 
 function generateDeck() {
@@ -98,6 +99,15 @@ function getCardValues(hand) {
   return hand.map(cards => cards[1]);
 }
 
+function determineAceValues(numOfAces, handValue) {
+  while (numOfAces > 0) {
+    if (handValue > BUST_LIMIT) handValue -= 10;
+    numOfAces -= 1;
+  }
+
+  return handValue;
+}
+
 function sumHand(hand) {
   let total = 0;
   let aces = 0;
@@ -117,15 +127,6 @@ function sumHand(hand) {
   total = determineAceValues(aces, total);
 
   return total;
-}
-
-function determineAceValues(numOfAces, handValue) {
-  while (numOfAces > 0) {
-    if (handValue > BUST_LIMIT) handValue -= 10;
-    numOfAces -= 1;
-  }
-
-  return handValue;
 }
 
 function getChoiceToHitOrStay() {
@@ -173,14 +174,12 @@ function revealComputerHand(hand) {
 }
 
 function displayHands(playerHand, cpuHand) {
-  // clearConsole();
   displayUserHand(playerHand);
   displayComputerHand(cpuHand);
   console.log('\n');
 }
 
 function displayFinalHands(playerHand, cpuHand) {
-  // clearConsole();
   displayUserHand(playerHand);
   revealComputerHand(cpuHand);
   console.log('\n');
