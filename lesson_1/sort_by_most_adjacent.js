@@ -74,34 +74,35 @@ OUTPUT: # of adjacent consonants
     - continue
 */
 
-const VOWELS = ['a', 'e', 'i', 'o', 'u', 'y'];
+const VOWELS = 'aeiou';
 
-function sortStringsByConsonants(array) {
-  return array.slice().sort((a, b) => calcAdjacent(b) - calcAdjacent(a));
-}
+function getAdjConsonants(str) {
+  let adjacent = 0;
+  let currAdjacent = 0;
+  str = str.split(' ').join('');
 
-function calcAdjacent(string) {
-  let numAdjacent = 0;
-
-  [...string.split(' ').join('')].forEach((ele, idx, arr) => {
-
-    if (charIsAdj(ele, arr[idx - 1], arr[idx + 1])) {
-      numAdjacent += 1;
+  for (let idx = 0; idx < str.length - 1; idx += 1) {
+    if (!VOWELS.includes(str[idx])) {
+      currAdjacent += 1;
+    } else {
+      if (currAdjacent > adjacent) adjacent = currAdjacent;
+      currAdjacent = 0;
     }
-  });
 
-  return numAdjacent;
+    if (currAdjacent > adjacent) adjacent = currAdjacent;
+  }
+  return adjacent;
 }
 
-function charIsAdj(char, prev, next) {
-  if (VOWELS.includes(char)) return false;
+function sortStringsByConsonants(arr) {
+  let sorted = arr.slice();
 
-  return (prev !== undefined && !VOWELS.includes(prev)) ||
-         (next !== undefined && !VOWELS.includes(next));
+  sorted.sort((a, b) => getAdjConsonants(b) - getAdjConsonants(a));
+  return sorted;
 }
 
 
-console.log(sortStringsByConsonants(['aa', 'baa', 'ccaa', 'dddaa']));
+console.log(sortStringsByConsonants(['aa', 'ddaddaddadda', 'baa', 'ccaa', 'dddaa']));
 // 3, 2, 0, 0
 // ['dddaa', 'ccaa', 'aa', 'baa']
 
